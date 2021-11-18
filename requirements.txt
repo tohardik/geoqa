@@ -4,6 +4,7 @@ certifi==2021.10.8
 charset-normalizer==2.0.7
 click==8.0.3
 cymem==2.0.6
+en-core-web-lg @ https://github.com/explosion/spacy-models/releases/download/en_core_web_lg-3.2.0/en_core_web_lg-3.2.0-py3-none-any.whl
 en-core-web-sm @ https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.2.0/en_core_web_sm-3.2.0-py3-none-any.whl
 Flask==2.0.2
 idna==3.3
@@ -18,6 +19,7 @@ pathy==0.6.1
 preshed==3.0.6
 pydantic==1.8.2
 pyparsing==2.4.7
+PyYAML==6.0
 requests==2.26.0
 smart-open==5.2.1
 spacy==3.2.0
