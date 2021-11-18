@@ -1,16 +1,18 @@
 import itertools
-from pprint import pprint
 from typing import List, Tuple
 
 import spacy
 
-from app.model.beans import LinkingResponse, FilledPattern, LinkedCandidate, Constants, FilledQuery
-from app.util.property_utils import PropertyUtils
+from geoqa import app as flask_app
+from geoqa.model.beans import LinkingResponse, FilledPattern, LinkedCandidate, Constants, FilledQuery
+from geoqa.util.property_utils import PropertyUtils
 
 nlp = spacy.load("en_core_web_sm")
 
 
 class QueryGenerator:
+
+    LOG = flask_app.logger
 
     def __init__(self, question: str, geo_operator: str, linking_info: LinkingResponse):
         self.question = question
@@ -19,8 +21,6 @@ class QueryGenerator:
         self.linking_info = linking_info
 
     def generate_queries(self):
-        # print(geo_operator)
-        # print(linking_info.to_dict())
         links_by_position = {}
 
         all_links = self.linking_info.get_all_links()
@@ -40,7 +40,7 @@ class QueryGenerator:
         #     print(len(links_by_position), links_by_position)
         if len(links_by_position) < 2:
             print("-- ", self.question)
-            return
+            return []
 
         triple_patterns = self.generate_triple_patterns(links_by_position)
         filled_triple_patterns = self.fill_patterns(triple_patterns)
@@ -48,7 +48,7 @@ class QueryGenerator:
         query_form = self.determine_query_form()
         count_applicable = self.should_apply_count_aggregate()
         queries = self.populate_query_anatomy(query_form, count_applicable, filled_triple_patterns)
-        pprint(queries)
+        return queries
 
     @classmethod
     def generate_triple_patterns(cls, links_by_position):
@@ -65,7 +65,10 @@ class QueryGenerator:
                 combinations = list(itertools.product(flattened[start_indexes[i]], flattened[start_indexes[j]]))
                 triple_patterns = triple_patterns.union(combinations)
 
-        return list(triple_patterns)
+        return_value = list(triple_patterns)
+        cls.LOG.info(f"Triple patterns: {return_value}")
+
+        return return_value
 
     def fill_patterns(self, triple_patterns) -> List[FilledPattern]:
         basic_patterns = PropertyUtils.get_query_templates(self.geo_operator)
@@ -77,7 +80,7 @@ class QueryGenerator:
             query_pattern_info: dict = basic_patterns.get(basic_pattern_key)
 
             if query_pattern_info is not None:
-                print(basic_pattern_key)
+                self.LOG.info(f"Basic pattern: {basic_pattern_key}")
 
                 query_pattern = query_pattern_info.get("pattern")
                 variable = query_pattern_info.get("variable")
@@ -98,6 +101,10 @@ class QueryGenerator:
 
                 combinations = list(itertools.product(first_placeholder_set, second_placeholder_set))
                 for combination in combinations:
+                    # Remove pairs which are self products
+                    if combination[0].startIndex == combination[1].startIndex:
+                        continue
+
                     filled: FilledPattern = self.apply_combination(query_pattern, variable, combination)
                     filled_patterns.append(filled)
 
@@ -142,6 +149,10 @@ class QueryGenerator:
 
             # Set selected variable
             if query_form == Constants.QUERY_FORM_SELECT:
+                # Prevent invalid patterns
+                if triple_pattern.variable is None:
+                    continue
+
                 if count_applicable:
                     query = query.replace(Constants.QUERY_VARIABLE, Constants.QUERY_COUNT_VARIABLE)
 

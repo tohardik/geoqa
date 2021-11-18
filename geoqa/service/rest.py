@@ -1,14 +1,14 @@
 import json
-import logging
 
 import requests
 
-from app.model.beans import LinkingResponse
-from app.util.property_utils import PropertyUtils
+from geoqa import app as flask_app
+from geoqa.model.beans import LinkingResponse
+from geoqa.util.property_utils import PropertyUtils
 
 
 class ServiceConnector(object):
-    LOG = logging.getLogger("app.service.ServiceConnector")
+    LOG = flask_app.logger
 
     def connect(self, service_url: str, params: dict):
         try:

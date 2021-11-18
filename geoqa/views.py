@@ -1,7 +1,7 @@
 from flask import render_template, request
 
-from app import app
-from app.service.orchestration import Orchestrator
+from geoqa import app
+from geoqa.service.orchestration import Orchestrator
 
 orchestration_service = Orchestrator()
 

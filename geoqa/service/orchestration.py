@@ -1,0 +1,40 @@
+import logging
+import re
+from typing import List
+
+from geoqa import app as flask_app
+from geoqa.core.query_generator import QueryGenerator
+from geoqa.model.beans import FilledQuery
+from geoqa.service.rest import ServiceConnector
+from geoqa.util.property_utils import PropertyUtils
+
+
+class Orchestrator(object):
+    LOG = flask_app.logger
+    service_connector = ServiceConnector()
+
+    def answer_question(self, question: str, lang="en"):
+        cleaned_question = re.sub(r"\s+", " ", question.strip())
+        self.LOG.info(f"Question: {cleaned_question}")
+
+        classification = self.service_connector.do_geo_classification(cleaned_question)["result"]
+        geo_operator = max(classification, key=classification.get)
+        self.LOG.info(f"Classification: {classification}")
+
+        linking_info = self.service_connector.do_linking(cleaned_question)
+        self.LOG.info(f"Linked classes: {linking_info.linkedClasses}")
+        self.LOG.info(f"Linked entities: {linking_info.linkedEntities}")
+
+        query_generator = QueryGenerator(cleaned_question, geo_operator, linking_info)
+        queries: List[FilledQuery] = query_generator.generate_queries()
+        self.LOG.info(f"Generated queries: {len(queries)}")
+
+
+if __name__ == '__main__':
+    o = Orchestrator()
+    o.answer_question("How many castles does Bremen have?")
+    # o.answer_question("Does Delmestraße cross Pappelstraße?")
+
+    # question = Utils.read_benchmark_questions()
+    # for q in question:
+    #     o.answer_question(q)

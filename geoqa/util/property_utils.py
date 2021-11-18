@@ -2,8 +2,8 @@ from importlib.resources import open_text
 
 import yaml
 
-import app
-from app import app as flask_app
+import geoqa
+from geoqa import app as flask_app
 
 
 class PropertyUtils(object):
@@ -42,7 +42,7 @@ class PropertyUtils(object):
     @classmethod
     def get_query_templates(cls, geo_operator: str) -> dict:
         if cls.__QUERY_TEMPLATES is None:
-            with open_text(app, "query_templates.yml") as o:
+            with open_text(geoqa, "query_templates.yml") as o:
                 cls.__QUERY_TEMPLATES = yaml.load(o, Loader=yaml.FullLoader)
 
         return cls.__QUERY_TEMPLATES[geo_operator]
