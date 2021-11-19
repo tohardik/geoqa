@@ -1,8 +1,9 @@
-import logging
 import re
+from pprint import pprint
 from typing import List
 
 from geoqa import app as flask_app
+from geoqa.core.query_executor import QueryExecutor
 from geoqa.core.query_generator import QueryGenerator
 from geoqa.model.beans import FilledQuery
 from geoqa.service.rest import ServiceConnector
@@ -29,12 +30,32 @@ class Orchestrator(object):
         queries: List[FilledQuery] = query_generator.generate_queries()
         self.LOG.info(f"Generated queries: {len(queries)}")
 
+        query_executor = QueryExecutor()
+        results = query_executor.execute_and_rank(queries)
+
+        if len(results) > 0:
+            self.LOG.info(results[0].query.query)
+            return results[0].result  # todo check for empty
+        else:
+            return {
+                "head": {
+                    "vars": ["x"]
+                },
+                "results": {
+                    "bindings": []
+                }
+            }
+
 
 if __name__ == '__main__':
     o = Orchestrator()
-    o.answer_question("How many castles does Bremen have?")
+    pprint(o.answer_question("Is Bürgerhain forest adjacent to a park?"))
     # o.answer_question("Does Delmestraße cross Pappelstraße?")
 
-    # question = Utils.read_benchmark_questions()
+    # question = PropertyUtils.read_benchmark_questions()
     # for q in question:
     #     o.answer_question(q)
+
+# Are there any driving schools in Blumenthal?
+# Show me the bakeries in Findorff.
+# How many kindergartens are there in Schönebeck?

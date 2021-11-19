@@ -6,6 +6,10 @@ class Constants(object):
     ENTITY = "ENTITY"
     RELATION = "RELATION"
 
+    NODE_CLASS = "http://linkedgeodata.org/meta/Node"
+    WAY_CLASS = "http://linkedgeodata.org/meta/Way"
+    RELATION_CLASS = "http://linkedgeodata.org/meta/Relation"
+
     ENTITY_PLACEHOLDER = "__ENTITY__"
     CLASS_PLACEHOLDER = "__CLASS__"
 
@@ -38,6 +42,7 @@ class Constants(object):
     PREFIX geof: <http://www.opengis.net/def/function/geosparql/>
      
     """
+
 
 class LinkedCandidate:
     def __init__(self, uri, label, searchTerm, originalTerm, esScore, multiplier, levensteinDistance, types, startIndex,
@@ -83,6 +88,15 @@ class LinkedCandidate:
 
     def is_relation(self):
         return self.category == Constants.RELATION
+
+    def is_entity_node(self):
+        return self.is_entity() and Constants.NODE_CLASS in self.types
+
+    def is_entity_way(self):
+        return self.is_entity() and Constants.WAY_CLASS in self.types
+
+    def is_entity_relation(self):
+        return self.is_entity() and Constants.RELATION_CLASS in self.types
 
     @classmethod
     def from_dict(cls, d, category):
@@ -135,20 +149,41 @@ class FilledPattern:
 
 
 class FilledQuery:
-    def __init__(self, query, used_classes=None, used_relations=None, used_entities=None):
+    def __init__(self, query: str, query_form: str, question: str = None, geo_operator: str = None,
+                 used_classes: List[LinkedCandidate] = None, used_relations: List[LinkedCandidate] = None,
+                 used_entities: List[LinkedCandidate] = None):
         if used_entities is None:
             used_entities = []
         if used_relations is None:
             used_relations = []
         if used_classes is None:
             used_classes = []
-        self.query = query
-        self.used_classes = used_classes
-        self.used_relations = used_relations
-        self.used_entities = used_entities
+        self.query: str = query
+        self.query_form: str = query_form
+        self.question: str = question
+        self.geo_operator: str = geo_operator
+        self.used_classes: List[LinkedCandidate] = used_classes
+        self.used_relations: List[LinkedCandidate] = used_relations
+        self.used_entities: List[LinkedCandidate] = used_entities
 
     def __str__(self) -> str:
         return f"{self.query}"
 
     def __repr__(self) -> str:
         return f"{self.query}"
+
+    def is_ask_query(self) -> bool:
+        return self.query_form == Constants.QUERY_FORM_ASK
+
+    def is_select_query(self) -> bool:
+        return self.query_form == Constants.QUERY_FORM_SELECT
+
+    def get_all_links(self) -> List[LinkedCandidate]:
+        return self.used_classes + self.used_relations + self.used_entities
+
+
+class QueryAndResult(object):
+    def __init__(self, query: FilledQuery, result: dict, ranking_score: float = 0.0):
+        self.query = query
+        self.result = result
+        self.ranking_score = ranking_score

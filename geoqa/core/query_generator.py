@@ -48,6 +48,12 @@ class QueryGenerator:
         query_form = self.determine_query_form()
         count_applicable = self.should_apply_count_aggregate()
         queries = self.populate_query_anatomy(query_form, count_applicable, filled_triple_patterns)
+
+        # Add question and geo_operator to filled queries
+        for filled_query in queries:
+            filled_query.question = self.question
+            filled_query.geo_operator = self.geo_operator
+
         return queries
 
     @classmethod
@@ -167,7 +173,7 @@ class QueryGenerator:
             query = query.replace(Constants.QUERY_ORDERING, "")
             query = query.replace(Constants.QUERY_LIMIT, "")
 
-            queries.append(FilledQuery(query.strip(), used_classes=triple_pattern.used_classes,
+            queries.append(FilledQuery(query.strip(), query_form, used_classes=triple_pattern.used_classes,
                                        used_relations=triple_pattern.used_relations,
                                        used_entities=triple_pattern.used_entities))
 

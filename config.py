@@ -11,4 +11,4 @@ class Config(object):
     LINKING_SERVICE_PORT = "9092"
     LINKING_SERVICE_ENDPOINT = "link"
 
-    SPARQL_ENDPOINT = "http://geo-qa.cs.upb.de:5000/bremen_geo/sparql"
+    SPARQL_ENDPOINT = "http://geo-qa.cs.upb.de:3030/bremen_geo/sparql"

@@ -1,14 +1,16 @@
-from flask import render_template, request
+from flask import render_template, request, jsonify
 
 from geoqa import app
 from geoqa.service.orchestration import Orchestrator
 
 orchestration_service = Orchestrator()
 
+
 @app.route("/")
 def index():
     qa()
     return render_template("index.html")
+
 
 @app.route("/qa", methods=["POST", "GET"])
 def qa():
@@ -20,6 +22,5 @@ def qa():
         lang = request.args.get('lang', 'en')
 
     orc = Orchestrator()
-    orc.hello()
-    return None
-
+    answer = orc.answer_question(query, lang)
+    return jsonify(answer)
