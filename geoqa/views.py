@@ -15,10 +15,10 @@ def index():
 @app.route("/qa", methods=["POST", "GET"])
 def qa():
     if request.method == "POST":
-        query = request.form.get('core')
+        query = request.form.get('query')
         lang = request.form.get('lang', 'en')
     else:
-        query = request.args.get('core')
+        query = request.args.get('query')
         lang = request.args.get('lang', 'en')
 
     orc = Orchestrator()
