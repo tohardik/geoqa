@@ -32,6 +32,7 @@ class Constants(object):
     QUERY_WHERE_CLAUSE = "__WHERE_CLAUSE__"
     QUERY_ORDERING = "__ORDER_BY__"
     QUERY_LIMIT = "__LIMIT__"
+    QUERY_PROXIMITY_VALUE = "__DISTANCE__"
 
     QUERY_FORM_SELECT = "SELECT"
     QUERY_FORM_ASK = "ASK"

@@ -23,4 +23,16 @@ def qa():
 
     orc = Orchestrator()
     answer = orc.answer_question(query, lang)
-    return jsonify(answer)
+    return jsonify(get_qald_format_answer(answer))
+
+
+def get_qald_format_answer(answer):
+    return {
+        "questions": [
+            {
+                "question": {
+                    "answers": answer
+                }
+            }
+        ]
+    }

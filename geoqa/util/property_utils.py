@@ -1,3 +1,4 @@
+import re
 from importlib.resources import open_text
 
 import yaml
@@ -47,4 +48,21 @@ class PropertyUtils(object):
 
         return cls.__QUERY_TEMPLATES[geo_operator]
 
+
+if __name__ == '__main__':
+    import spacy
+    nlp = spacy.load("en_core_web_sm")
+    questions = PropertyUtils.read_benchmark_questions()
+    questions = ["within 200m", "500 m", "200 kilometers", "within 500kilometre", "within 200meter", "500 metres","within 200meters", "500 metre", "200km"]
+    for q in questions:
+        print(q)
+        parsed = nlp(q)
+        for token in parsed:
+            if token.pos_ == "NUM":
+                next_token = parsed[token.i + 1]
+                unit_search = re.search(r'(m)|(km)|(kilo)?\s?(meter|metre)s?', next_token.text)
+                if unit_search is not None:
+                    print(token.text, unit_search.group())
+
+        print("------------")
 

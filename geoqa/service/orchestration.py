@@ -49,7 +49,7 @@ class Orchestrator(object):
 
 if __name__ == '__main__':
     o = Orchestrator()
-    pprint(o.answer_question("Is Bürgerhain forest adjacent to a park?"))
+    pprint(o.answer_question("Is there any bicycle parking in a range of 200 m from Knochenhauerstraße?"))
     # o.answer_question("Does Delmestraße cross Pappelstraße?")
 
     # question = PropertyUtils.read_benchmark_questions()

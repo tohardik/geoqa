@@ -27,5 +27,5 @@ Crossing:
     variable:
 Proximity:
   CLASS__DISTANCE__ENTITY:
-    pattern: "{ __ENTITY__ geo:hasGeometry ?aGeom . ?aGeom geo:asWKT ?aWKT . ?target a __CLASS__ ; geo:hasGeometry ?tGeom . ?tGeom geo:asWKT ?tWKT . BIND(geof:distance(?aWKT, ?tWKT, uom:metre) AS ?distance) FILTER ( !sameTerm(?aWKT, ?tWKT) && (?distance < 500) ) } ORDER BY ASC(?distance)"
+    pattern: "{ __ENTITY__ geo:hasGeometry ?aGeom . ?aGeom geo:asWKT ?aWKT . ?target a __CLASS__ ; geo:hasGeometry ?tGeom . ?tGeom geo:asWKT ?tWKT . BIND(geof:distance(?aWKT, ?tWKT, uom:metre) AS ?distance) FILTER ( !sameTerm(?aWKT, ?tWKT) && (?distance < __DISTANCE__) ) } ORDER BY ASC(?distance)"
     variable: "?target"

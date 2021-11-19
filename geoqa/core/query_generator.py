@@ -1,4 +1,5 @@
 import itertools
+import re
 from typing import List, Tuple
 
 import spacy
@@ -11,7 +12,6 @@ nlp = spacy.load("en_core_web_sm")
 
 
 class QueryGenerator:
-
     LOG = flask_app.logger
 
     def __init__(self, question: str, geo_operator: str, linking_info: LinkingResponse):
@@ -142,8 +142,7 @@ class QueryGenerator:
         first_two_words = self.parsed_question[:2].lemma_
         return first_two_words == "how many"
 
-    @classmethod
-    def populate_query_anatomy(cls, query_form: str, count_applicable: bool,
+    def populate_query_anatomy(self, query_form: str, count_applicable: bool,
                                filled_triple_patterns: List[FilledPattern]) -> List[FilledQuery]:
         queries = []
         for triple_pattern in filled_triple_patterns:
@@ -172,6 +171,22 @@ class QueryGenerator:
             # Set ordering and limit TODO skipped for now
             query = query.replace(Constants.QUERY_ORDERING, "")
             query = query.replace(Constants.QUERY_LIMIT, "")
+
+            # For proximity query, distance must be extracted
+            if self.geo_operator == Constants.GEO_OPERATOR_PROXIMITY:
+                distance = None
+                for token in self.parsed_question:
+                    if token.pos_ == "NUM":
+                        next_token = self.parsed_question[token.i + 1]
+                        unit_search = re.search(r'm|km|(kilo)?\s?(meter|metre)s?', next_token.text)
+                        if unit_search is not None:
+                            if unit_search.group().lower().startswith("m"):
+                                distance = float(token.text)
+                            elif unit_search.group().lower().startswith("k"):
+                                distance = float(token.text) * 1000
+
+                if distance is not None:
+                    query = query.replace(Constants.QUERY_PROXIMITY_VALUE, str(distance))
 
             queries.append(FilledQuery(query.strip(), query_form, used_classes=triple_pattern.used_classes,
                                        used_relations=triple_pattern.used_relations,

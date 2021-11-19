@@ -52,7 +52,16 @@ class QueryExecutor(object):
 
                 # add number of results returned, i.e., queries returning more number results rank higher
                 if query_and_result.query.is_select_query():
-                    query_and_result.ranking_score = score
+                    score = score + len(query_and_result.result["results"]["bindings"])
+                else:  # if ASK query and answer is True, rank higher
+                    if query_and_result.result["boolean"]:
+                        score = score + 1
+
+                # TODO for Proximity questions, rank relation > way > node
+                # if query_and_result.query.geo_operator == Constants.GEO_OPERATOR_PROXIMITY:
+
+                # Set score
+                query_and_result.ranking_score = score
 
             results = sorted(results, key=lambda q_and_r: -q_and_r.ranking_score)
 
