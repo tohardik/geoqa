@@ -3,12 +3,14 @@ import re
 from typing import List, Tuple
 
 import spacy
+from spacytextblob.spacytextblob import SpacyTextBlob
 
 from geoqa import app as flask_app
 from geoqa.model.beans import LinkingResponse, FilledPattern, LinkedCandidate, Constants, FilledQuery
 from geoqa.util.property_utils import PropertyUtils
 
 nlp = spacy.load("en_core_web_sm")
+nlp.add_pipe('spacytextblob')
 
 
 class QueryGenerator:
@@ -60,11 +62,20 @@ class QueryGenerator:
     def generate_triple_patterns(cls, links_by_position):
         flattened = {}
         for start_index in links_by_position:
-            flattened[start_index] = set()
+            categories = set()
             for link in links_by_position[start_index]:
-                flattened[start_index].add(link.category)
+                if not link.is_relation():
+                    categories.add(link.category)
+
+            if len(categories) > 0:
+                flattened[start_index] = categories
 
         start_indexes = sorted(flattened.keys())
+
+        # If only a class is linked in the question in addition to (optionally) the relation
+        if len(start_indexes) == 1 and Constants.CLASS in flattened[start_indexes[0]]:
+            return [(Constants.CLASS,)]
+
         triple_patterns = set()
         for i in range(len(start_indexes)):
             for j in range(i + 1, len(start_indexes)):
@@ -81,8 +92,9 @@ class QueryGenerator:
 
         filled_patterns: List[FilledPattern] = []
         for triple_pattern in triple_patterns:
-            basic_pattern_key = Constants.GEO_OPERATOR_PATTERN.get(self.geo_operator)
-            basic_pattern_key = triple_pattern[0] + basic_pattern_key + triple_pattern[1]
+            basic_pattern_key = triple_pattern[0]
+            for i in range(1, len(triple_pattern)):
+                basic_pattern_key = basic_pattern_key + "__" + triple_pattern[i]
             query_pattern_info: dict = basic_patterns.get(basic_pattern_key)
 
             if query_pattern_info is not None:
@@ -91,37 +103,48 @@ class QueryGenerator:
                 query_pattern = query_pattern_info.get("pattern")
                 variable = query_pattern_info.get("variable")
 
+                # Make combinations
+                combinations = []
+
+                # There is always at least one placeholder, i.e., class
                 first_placeholder = triple_pattern[0]
                 first_placeholder_set = None
                 if first_placeholder == Constants.CLASS:
                     first_placeholder_set = self.linking_info.linkedClasses
                 elif first_placeholder == Constants.ENTITY:
                     first_placeholder_set = self.linking_info.linkedEntities
+                for element in first_placeholder_set:
+                    combinations.append((element,))
 
-                second_placeholder = triple_pattern[1]
-                second_placeholder_set = None
-                if second_placeholder == Constants.CLASS:
-                    second_placeholder_set = self.linking_info.linkedClasses
-                elif second_placeholder == Constants.ENTITY:
-                    second_placeholder_set = self.linking_info.linkedEntities
+                if len(triple_pattern) > 1:
+                    second_placeholder = triple_pattern[1]
+                    second_placeholder_set = None
+                    if second_placeholder == Constants.CLASS:
+                        second_placeholder_set = self.linking_info.linkedClasses
+                    elif second_placeholder == Constants.ENTITY:
+                        second_placeholder_set = self.linking_info.linkedEntities
 
-                combinations = list(itertools.product(first_placeholder_set, second_placeholder_set))
-                for combination in combinations:
+                    combinations = list(itertools.product(first_placeholder_set, second_placeholder_set))
                     # Remove pairs which are self products
-                    if combination[0].startIndex == combination[1].startIndex:
-                        continue
+                    combinations = [c for c in combinations if c[0].startIndex != c[1].startIndex]
 
-                    filled: FilledPattern = self.apply_combination(query_pattern, variable, combination)
-                    filled_patterns.append(filled)
+                for combination in combinations:
+                    filled: List[FilledPattern] = self.apply_combination(query_pattern, variable, combination)
+                    filled_patterns.extend(filled)
 
         return filled_patterns
 
-    @classmethod
-    def apply_combination(cls, query_template: str, variable: str,
-                          combination: Tuple[LinkedCandidate]) -> FilledPattern:
-        filled = str(query_template)
+    def apply_combination(self, query_template: str, variable: str,
+                          combination: Tuple[LinkedCandidate]) -> List[FilledPattern]:
+
+        filled_patterns = []
+
+        filled = query_template
         used_classes = []
         used_entities = []
+        used_relations = []
+
+        # Handle class and entities as part of the combination
         for link in combination:
             if link.is_class():
                 filled = filled.replace(Constants.CLASS_PLACEHOLDER, f"<{link.uri}>")
@@ -130,7 +153,64 @@ class QueryGenerator:
                 filled = filled.replace(Constants.ENTITY_PLACEHOLDER, f"<{link.uri}>")
                 used_entities.append(link)
 
-        return FilledPattern(filled, variable, used_classes=used_classes, used_entities=used_entities)
+        # Handle relations as an additional constrains that targets the selected variable
+        if len(self.linking_info.linkedRelations) > 0:
+            for relation in self.linking_info.linkedRelations:
+                filled_with_relation = str(filled)
+                relation_triple_pattern = f"{variable} <{relation.uri}> {Constants.QUERY_RELATION_VARIABLE} . "
+                filled_with_relation = filled_with_relation.replace(Constants.QUERY_RELATION, relation_triple_pattern)
+
+                if self.get_comparative_token() is not None:
+                    relation_filter = self.get_relation_filter(Constants.QUERY_RELATION_VARIABLE)
+                    if relation_filter is None:
+                        continue
+
+                    filled_with_relation = filled_with_relation.replace(Constants.QUERY_RELATION_FILTER, relation_filter)
+                    used_relations.append(relation)
+                else:
+                    filled_with_relation = filled_with_relation.replace(Constants.QUERY_RELATION_FILTER, "")
+                    used_relations.append(relation)
+
+                filled_patterns.append(FilledPattern(filled_with_relation, variable, used_classes=used_classes,
+                                                     used_relations=used_relations, used_entities=used_entities))
+
+        else:
+            filled = filled.replace(Constants.QUERY_RELATION, "")
+            filled = filled.replace(Constants.QUERY_RELATION_FILTER, "")
+            filled_patterns.append(
+                FilledPattern(filled, variable, used_classes=used_classes, used_entities=used_entities))
+
+        return filled_patterns
+
+    def is_superlative_present(self):
+        return self.get_superlative_token() is not None
+
+    def get_superlative_token(self):
+        for token in self.parsed_question:
+            if token.tag_ == "JJS":
+                return token
+
+        return None
+
+    def get_comparative_token(self):
+        for token in self.parsed_question:
+            if token.tag_ == "JJR":
+                return token
+
+        return None
+
+    def get_relation_filter(self, filter_variable: str):
+        filter_value = None
+        for token in self.parsed_question:
+            if token.pos_ == "NUM" and re.search("\\d", token.text) is not None:
+                filter_value = float(token.text)
+
+        if filter_value is None:
+            return None
+
+        comparative = self.get_comparative_token()
+        comparison_operator = ">" if comparative._.polarity > 0 else "<"
+        return f"FILTER ({filter_variable} {comparison_operator} {str(filter_value)})"
 
     def determine_query_form(self) -> str:
         if self.parsed_question[0].lemma_ == "do" or self.parsed_question[0].lemma_ == "be":
@@ -168,9 +248,18 @@ class QueryGenerator:
             # Set where clause
             query = query.replace(Constants.QUERY_WHERE_CLAUSE, triple_pattern.query_template)
 
-            # Set ordering and limit TODO skipped for now
-            query = query.replace(Constants.QUERY_ORDERING, "")
-            query = query.replace(Constants.QUERY_LIMIT, "")
+            # Set ordering and limit
+            if self.is_superlative_present():
+                if self.get_superlative_token()._.polarity > 0:
+                    ordering = f"ORDER BY DESC({Constants.QUERY_RELATION_VARIABLE})"
+                else:
+                    ordering = f"ORDER BY ASC({Constants.QUERY_RELATION_VARIABLE})"
+
+                query = query.replace(Constants.QUERY_ORDERING, ordering)
+                query = query.replace(Constants.QUERY_LIMIT, "LIMIT 1")
+            else:
+                query = query.replace(Constants.QUERY_ORDERING, "")
+                query = query.replace(Constants.QUERY_LIMIT, "")
 
             # For proximity query, distance must be extracted
             if self.geo_operator == Constants.GEO_OPERATOR_PROXIMITY:
@@ -187,18 +276,11 @@ class QueryGenerator:
 
                 if distance is not None:
                     query = query.replace(Constants.QUERY_PROXIMITY_VALUE, str(distance))
+                else:
+                    query = query.replace(Constants.QUERY_PROXIMITY_VALUE, "250")
 
             queries.append(FilledQuery(query.strip(), query_form, used_classes=triple_pattern.used_classes,
                                        used_relations=triple_pattern.used_relations,
                                        used_entities=triple_pattern.used_entities))
 
         return queries
-
-
-if __name__ == '__main__':
-    q = "Does the district Hemelingen border Obervieland?"
-
-    nlp = spacy.load("en_core_web_lg")
-
-    some = list(nlp(q))
-    print(some)

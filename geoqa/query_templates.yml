@@ -1,31 +1,34 @@
 Borders:
-  CLASS__BORDERS__ENTITY:
-    pattern: "{ __ENTITY__ geo:hasGeometry ?aGeom . ?aGeom geo:asWKT ?aWKT . ?target a __CLASS__ ; geo:hasGeometry ?tGeom . ?tGeom geo:asWKT ?tWKT . BIND(geof:sfTouches(?aWKT, ?tWKT) AS ?touches) FILTER (?touches) }"
+  CLASS__ENTITY:
+    pattern: "{ __ENTITY__ geo:hasGeometry ?aGeom . ?aGeom geo:asWKT ?aWKT . ?target a __CLASS__ ; geo:hasGeometry ?tGeom . ?tGeom geo:asWKT ?tWKT . __RELATION__ __RELATION_FILTER__ BIND(geof:sfTouches(?aWKT, ?tWKT) AS ?touches) FILTER (?touches) }"
     variable: "?target"
-  CLASS__BORDERS__CLASS:
-    pattern: "{ ?a a __CLASS__ ; geo:hasGeometry ?aGeom . ?aGeom geo:asWKT ?aWKT . ?b a __CLASS__ ; geo:hasGeometry ?bGeom . ?bGeom geo:asWKT ?bWKT . BIND(geof:sfTouches(?aWKT, ?bWKT) AS ?touches) FILTER (?touches)}"
+  CLASS__CLASS:
+    pattern: "{ ?a a __CLASS__ ; geo:hasGeometry ?aGeom . ?aGeom geo:asWKT ?aWKT . ?b a __CLASS__ ; geo:hasGeometry ?bGeom . ?bGeom geo:asWKT ?bWKT . __RELATION__ __RELATION_FILTER__ BIND(geof:sfTouches(?aWKT, ?bWKT) AS ?touches) FILTER (?touches)}"
     variable: "?a"
-  ENTITY__BORDERS__ENTITY:
+  ENTITY__ENTITY:
     pattern: "{ __ENTITY__ geo:hasGeometry ?aGeom . ?aGeom geo:asWKT ?aWKT . __ENTITY__ geo:hasGeometry ?tGeom . ?tGeom geo:asWKT ?tWKT . BIND(geof:sfTouches(?aWKT, ?tWKT) AS ?touches) FILTER(?touches)  }"
     variable:
 Containment:
-  CLASS__CONTAINED_IN__ENTITY:
-    pattern: "{ ?target a __CLASS__ ; geo:hasGeometry ?tGeom . ?tGeom geo:asWKT ?tWKT . __ENTITY__ geo:hasGeometry ?aGeom . ?aGeom geo:asWKT ?aWKT . BIND(geof:sfContains(?aWKT, ?tWKT) AS ?contains) FILTER ( ?contains && (!sameTerm(?aWKT, ?tWKT)) ) }"
+  CLASS__ENTITY:
+    pattern: "{ ?target a __CLASS__ ; geo:hasGeometry ?tGeom . ?tGeom geo:asWKT ?tWKT . __ENTITY__ geo:hasGeometry ?aGeom . ?aGeom geo:asWKT ?aWKT . __RELATION__ __RELATION_FILTER__ BIND(geof:sfContains(?aWKT, ?tWKT) AS ?contains) FILTER ( ?contains && (!sameTerm(?aWKT, ?tWKT)) ) }"
     variable: "?target"
-  ENTITY__CONTAINED_IN__ENTITY:
+  ENTITY__ENTITY:
     pattern: "{ __ENTITY__ geo:hasGeometry ?aGeom . ?aGeom geo:asWKT ?aWKT . __ENTITY__ geo:hasGeometry ?tGeom . ?tGeom geo:asWKT ?tWKT . BIND(geof:sfContains(?aWKT, ?tWKT) AS ?contains) FILTER (?contains && (!sameTerm(?aWKT, ?tWKT))) }"
     variable:
+  CLASS:
+    pattern: "{ ?target a __CLASS__ ; geo:hasGeometry ?tGeom . ?tGeom geo:asWKT ?tWKT . __RELATION__ __RELATION_FILTER__ }"
+    variable: "?target"
 Crossing:
-  CLASS__CROSSING__ENTITY:
-    pattern: "{ ?target a __CLASS__ ; geo:hasGeometry ?tGeom . ?tGeom geo:asWKT ?tWKT . __ENTITY__ geo:hasGeometry ?aGeom . ?aGeom geo:asWKT ?aWKT . BIND(geof:sfCrosses(?tWKT, ?aWKT) as ?crosses) FILTER ( ?crosses && (!sameTerm(?aWKT, ?tWKT)) ) }"
+  CLASS__ENTITY:
+    pattern: "{ ?target a __CLASS__ ; geo:hasGeometry ?tGeom . ?tGeom geo:asWKT ?tWKT . __ENTITY__ geo:hasGeometry ?aGeom . ?aGeom geo:asWKT ?aWKT . __RELATION__ __RELATION_FILTER__ BIND(geof:sfCrosses(?tWKT, ?aWKT) as ?crosses) FILTER ( ?crosses && (!sameTerm(?aWKT, ?tWKT)) ) }"
     variable: "?target"
-  ENTITY__CROSSING__CLASS:
-    pattern: "{ __ENTITY__ geo:hasGeometry ?aGeom . ?aGeom geo:asWKT ?aWKT . ?target a __CLASS__ ; geo:hasGeometry ?tGeom . ?tGeom geo:asWKT ?tWKT . BIND(geof:sfCrosses(?aWKT, ?tWKT) AS ?crosses) FILTER ( ?crosses && (!sameTerm(?aWKT, ?tWKT)) ) }"
+  ENTITY__CLASS:
+    pattern: "{ __ENTITY__ geo:hasGeometry ?aGeom . ?aGeom geo:asWKT ?aWKT . ?target a __CLASS__ ; geo:hasGeometry ?tGeom . ?tGeom geo:asWKT ?tWKT . __RELATION__ __RELATION_FILTER__ BIND(geof:sfCrosses(?aWKT, ?tWKT) AS ?crosses) FILTER ( ?crosses && (!sameTerm(?aWKT, ?tWKT)) ) }"
     variable: "?target"
-  ENTITY__CROSSING__ENTITY:
+  ENTITY__ENTITY:
     pattern: "{ __ENTITY__ geo:hasGeometry ?aGeom . ?aGeom geo:asWKT ?aWKT . __ENTITY__ geo:hasGeometry ?tGeom . ?tGeom geo:asWKT ?tWKT . BIND(geof:sfCrosses(?aWKT, ?tWKT) AS ?crosses) FILTER ( ?crosses && (!sameTerm(?aWKT, ?tWKT)) ) }"
     variable:
 Proximity:
-  CLASS__DISTANCE__ENTITY:
-    pattern: "{ __ENTITY__ geo:hasGeometry ?aGeom . ?aGeom geo:asWKT ?aWKT . ?target a __CLASS__ ; geo:hasGeometry ?tGeom . ?tGeom geo:asWKT ?tWKT . BIND(geof:distance(?aWKT, ?tWKT, uom:metre) AS ?distance) FILTER ( !sameTerm(?aWKT, ?tWKT) && (?distance < __DISTANCE__) ) } ORDER BY ASC(?distance)"
+  CLASS__ENTITY:
+    pattern: "{ __ENTITY__ geo:hasGeometry ?aGeom . ?aGeom geo:asWKT ?aWKT . ?target a __CLASS__ ; geo:hasGeometry ?tGeom . ?tGeom geo:asWKT ?tWKT . __RELATION__ __RELATION_FILTER__ BIND(geof:distance(?aWKT, ?tWKT, uom:metre) AS ?distance) FILTER ( !sameTerm(?aWKT, ?tWKT) && (?distance < __DISTANCE__) ) }"
     variable: "?target"
