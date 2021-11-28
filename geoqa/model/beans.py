@@ -35,6 +35,7 @@ class Constants(object):
     QUERY_PROXIMITY_VALUE = "__DISTANCE__"
     QUERY_RELATION = "__RELATION__"
     QUERY_RELATION_FILTER = "__RELATION_FILTER__"
+    QUERY_RELATION_VARIABLE_RAW = "?valueRaw"
     QUERY_RELATION_VARIABLE = "?value"
 
     QUERY_FORM_SELECT = "SELECT"
@@ -44,6 +45,7 @@ class Constants(object):
     QUERY_COMMON_PREFIXES = """PREFIX uom: <http://www.opengis.net/def/uom/OGC/1.0/> 
     PREFIX geo: <http://www.opengis.net/ont/geosparql#> 
     PREFIX geof: <http://www.opengis.net/def/function/geosparql/>
+    PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
      
     """
 

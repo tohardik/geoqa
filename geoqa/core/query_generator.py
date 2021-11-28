@@ -58,8 +58,7 @@ class QueryGenerator:
 
         return queries
 
-    @classmethod
-    def generate_triple_patterns(cls, links_by_position):
+    def generate_triple_patterns(self, links_by_position):
         flattened = {}
         for start_index in links_by_position:
             categories = set()
@@ -82,9 +81,12 @@ class QueryGenerator:
                 combinations = list(itertools.product(flattened[start_indexes[i]], flattened[start_indexes[j]]))
                 triple_patterns = triple_patterns.union(combinations)
 
-        return_value = list(triple_patterns)
-        cls.LOG.info(f"Triple patterns: {return_value}")
+        # If linking has not linked any entities and only classes then add a single class pattern
+        if len(self.linking_info.linkedEntities) == 0 and len(self.linking_info.linkedClasses) > 0:
+            triple_patterns = triple_patterns.union([(Constants.CLASS,)])
 
+        return_value = list(triple_patterns)
+        self.LOG.info(f"Triple patterns: {return_value}")
         return return_value
 
     def fill_patterns(self, triple_patterns) -> List[FilledPattern]:
@@ -157,9 +159,12 @@ class QueryGenerator:
         if len(self.linking_info.linkedRelations) > 0:
             for relation in self.linking_info.linkedRelations:
                 filled_with_relation = str(filled)
-                relation_triple_pattern = f"{variable} <{relation.uri}> {Constants.QUERY_RELATION_VARIABLE} . "
-                filled_with_relation = filled_with_relation.replace(Constants.QUERY_RELATION, relation_triple_pattern)
+                relation_triple_pattern = \
+                    f'{variable} <{relation.uri}> {Constants.QUERY_RELATION_VARIABLE_RAW} . ' \
+                    f'BIND(xsd:float(REPLACE(xsd:string({Constants.QUERY_RELATION_VARIABLE_RAW}), "[^\\\\d\\\\.,]", ""))' \
+                    f' AS {Constants.QUERY_RELATION_VARIABLE})'
 
+                filled_with_relation = filled_with_relation.replace(Constants.QUERY_RELATION, relation_triple_pattern)
                 if self.get_comparative_token() is not None:
                     relation_filter = self.get_relation_filter(Constants.QUERY_RELATION_VARIABLE)
                     if relation_filter is None:

@@ -53,6 +53,7 @@ class QueryExecutor(object):
                 # add number of results returned, i.e., queries returning more number results rank higher
                 if query_and_result.query.is_select_query():
                     score = score + len(query_and_result.result["results"]["bindings"])
+                    # pass # disabling the rule
                 else:  # if ASK query and answer is True, rank higher
                     if query_and_result.result["boolean"]:
                         score = score + 1
@@ -85,14 +86,15 @@ class QueryExecutor(object):
 
             # For Containment question, at least one used entities should be non point geometry
             if query.geo_operator == Constants.GEO_OPERATOR_CONTAINMENT:
-                delete = True
-                for entity in query.used_entities:
-                    if entity.is_entity_way() or entity.is_entity_relation():
-                        delete = False
-                        break
-                if delete:
-                    filtered_out.append(query)
-                    continue
+                if len(query.used_entities) > 0:
+                    delete = True
+                    for entity in query.used_entities:
+                        if entity.is_entity_way() or entity.is_entity_relation():
+                            delete = False
+                            break
+                    if delete:
+                        filtered_out.append(query)
+                        continue
 
         return [query for query in queries if query not in filtered_out]
 
