@@ -12,3 +12,7 @@ class Config(object):
     LINKING_SERVICE_ENDPOINT = "link"
 
     SPARQL_ENDPOINT = "http://geo-qa.cs.upb.de:3030/bremen_geo/sparql"
+
+    ABLATION_CLASSIFICATION = True
+    ABLATION_LINKING = False
+    ABLATION_RANKING = True

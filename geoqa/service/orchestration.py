@@ -7,8 +7,11 @@ from geoqa.core.query_executor import QueryExecutor
 from geoqa.core.query_generator import QueryGenerator
 from geoqa.model.beans import FilledQuery
 from geoqa.service.rest import ServiceConnector
+from geoqa.util.ablation_utils import AblationProvider
 from geoqa.util.property_utils import PropertyUtils
 
+ablation_provider = AblationProvider()
+ablation_provider.get_golden_answers()
 
 class Orchestrator(object):
     LOG = flask_app.logger
@@ -34,8 +37,11 @@ class Orchestrator(object):
         results = query_executor.execute_and_rank(queries)
 
         if len(results) > 0:
+            if flask_app.config["ABLATION_RANKING"]:
+                results = ablation_provider.get_best_answer(cleaned_question, results)
+
             self.LOG.info(results[0].query.query)
-            return results[0].result  # todo check for empty
+            return results[0].result
         else:
             return {
                 "head": {
@@ -45,3 +51,12 @@ class Orchestrator(object):
                     "bindings": []
                 }
             }
+
+
+
+if __name__ == '__main__':
+    o = Orchestrator()
+    p = PropertyUtils()
+
+    for q in p.read_benchmark_questions():
+        o.answer_question(q)

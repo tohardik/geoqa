@@ -26,7 +26,11 @@ class ServiceConnector(object):
             return None
 
     def do_linking(self, question) -> LinkingResponse:
-        response = self.connect(PropertyUtils.get_linking_service_url(), {"input_text": question})
+        params = {"input_text": question}
+        if flask_app.config['ABLATION_LINKING']:
+            params["ablation"] = True
+
+        response = self.connect(PropertyUtils.get_linking_service_url(), params)
         if response is None:
             raise Exception("Failed to connect to geo classification service")
         else:
@@ -36,7 +40,11 @@ class ServiceConnector(object):
             return linking_response
 
     def do_geo_classification(self, question) -> dict:
-        response = self.connect(PropertyUtils.get_classifier_service_url(), {"input_text": question})
+        params = {"input_text": question}
+        if flask_app.config['ABLATION_CLASSIFICATION']:
+            params["ablation"] = True
+
+        response = self.connect(PropertyUtils.get_classifier_service_url(), params)
         if response is None:
             raise Exception("Failed to connect to geo classification service")
         else:
